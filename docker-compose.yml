@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  db-carrinho-de-compras:
+    image: postgres:16.2
+    container_name: "containerBancoDeDadosCarrinhoDeCompras"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    volumes:
+      - ./scriptBancoDeDados:/docker-entrypoint-initdb.d
+    ports:
+      - "5435:5432"
+    restart: always
+  app-carrinho-de-compras:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    container_name: app-sistema-carrinho-de-compras
+    environment:
+      POSTGRES_HOST: db-carrinho-de-compras:5432
+      JWT_SECRET: "segredoMaisSeguroDoMundo"
+    ports:
+      - "8082:8082"
+    depends_on:
+      - db-carrinho-de-compras
+    restart: always
