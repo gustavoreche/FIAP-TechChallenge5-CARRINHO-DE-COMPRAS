@@ -31,8 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.stream.Stream;
 
-import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO;
-import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO_COM_EAN;
+import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.*;
 
 
 @AutoConfigureMockMvc
@@ -760,6 +759,229 @@ public class CarrinhoControllerIT {
         Assertions.assertEquals(new BigDecimal("300.00"), itensDoCarrinho.get(0).getPrecoTotal());
         Assertions.assertEquals(7894900011517L, itensDoCarrinho.get(0).getId().getEan());
         Assertions.assertEquals(carrinho.getId(), itensDoCarrinho.get(0).getId().getIdCarrinho());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar200_sucesso() throws Exception {
+        final var carrinhoSalvo = this.repositoryCarrinho.save(
+                CarrinhoEntity.builder()
+                        .usuario("teste")
+                        .status(StatusEnum.ABERTO)
+                        .dataDeCriacao(LocalDateTime.now())
+                        .valorTotal(new BigDecimal("500.00"))
+                        .build()
+        );
+        this.repositoryItensNoCarrinho.save(
+                ItensNoCarrinhoEntity.builder()
+                        .id(ItensNoCarrinhoId.builder()
+                                .idCarrinho(carrinhoSalvo.getId())
+                                .ean(7894900011517L)
+                                .build())
+                        .precoTotal(new BigDecimal("500.00"))
+                        .build()
+        );
+
+        Mockito.when(this.clientUsuario.usuarioExiste("teste", "Bearer " + this.token))
+                .thenReturn(
+                        true
+                );
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer " + this.token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isOk()
+                );
+
+
+        var carrinho = this.repositoryCarrinho.findAll().get(0);
+        var itensDoCarrinho = this.repositoryItensNoCarrinho.findAll();
+
+        Assertions.assertEquals(StatusEnum.ABERTO, carrinho.getStatus());
+        Assertions.assertEquals("teste", carrinho.getUsuario());
+        Assertions.assertEquals(new BigDecimal("500.00"), carrinho.getValorTotal());
+        Assertions.assertNotNull(carrinho.getDataDeCriacao());
+        Assertions.assertEquals(1, itensDoCarrinho.size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar204_carrinhoFinalizado() throws Exception {
+        final var carrinhoSalvo = this.repositoryCarrinho.save(
+                CarrinhoEntity.builder()
+                        .usuario("teste")
+                        .status(StatusEnum.FINALIZADO)
+                        .dataDeCriacao(LocalDateTime.now())
+                        .valorTotal(new BigDecimal("500.00"))
+                        .build()
+        );
+        this.repositoryItensNoCarrinho.save(
+                ItensNoCarrinhoEntity.builder()
+                        .id(ItensNoCarrinhoId.builder()
+                                .idCarrinho(carrinhoSalvo.getId())
+                                .ean(7894900011517L)
+                                .build())
+                        .precoTotal(new BigDecimal("500.00"))
+                        .build()
+        );
+
+        Mockito.when(this.clientUsuario.usuarioExiste("teste", "Bearer " + this.token))
+                .thenReturn(
+                        true
+                );
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer " + this.token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isNoContent()
+                );
+
+
+        var carrinho = this.repositoryCarrinho.findAll().get(0);
+        var itensDoCarrinho = this.repositoryItensNoCarrinho.findAll();
+
+        Assertions.assertEquals(StatusEnum.FINALIZADO, carrinho.getStatus());
+        Assertions.assertEquals("teste", carrinho.getUsuario());
+        Assertions.assertEquals(new BigDecimal("500.00"), carrinho.getValorTotal());
+        Assertions.assertNotNull(carrinho.getDataDeCriacao());
+        Assertions.assertEquals(1, itensDoCarrinho.size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar204_carrinhonNaoExiste() throws Exception {
+        Mockito.when(this.clientUsuario.usuarioExiste("teste", "Bearer " + this.token))
+                .thenReturn(
+                        true
+                );
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer " + this.token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isNoContent()
+                );
+
+        Assertions.assertEquals(0, this.repositoryCarrinho.findAll().size());
+        Assertions.assertEquals(0, this.repositoryItensNoCarrinho.findAll().size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar204_usuarioNaoExiste() throws Exception {
+        Mockito.when(this.clientUsuario.usuarioExiste("testeeeee", "Bearer " + this.token))
+                .thenReturn(
+                        true
+                );
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer " + this.token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isNoContent()
+                );
+
+        Assertions.assertEquals(0, this.repositoryCarrinho.findAll().size());
+        Assertions.assertEquals(0, this.repositoryItensNoCarrinho.findAll().size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar401_semToken() throws Exception {
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isUnauthorized()
+                );
+
+        Assertions.assertEquals(0, this.repositoryCarrinho.findAll().size());
+        Assertions.assertEquals(0, this.repositoryItensNoCarrinho.findAll().size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar401_tokenInvalido() throws Exception {
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer TESTE")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isUnauthorized()
+                );
+
+        Assertions.assertEquals(0, this.repositoryCarrinho.findAll().size());
+        Assertions.assertEquals(0, this.repositoryItensNoCarrinho.findAll().size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar401_tokenExpirado() throws Exception {
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer " + JwtUtil.geraJwt(LocalDateTime.now()
+                                .minusHours(3)
+                                .toInstant(ZoneOffset.of("-03:00"))))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isUnauthorized()
+                );
+
+        Assertions.assertEquals(0, this.repositoryCarrinho.findAll().size());
+        Assertions.assertEquals(0, this.repositoryItensNoCarrinho.findAll().size());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar204_carrinhoFinalizadoComRoleUSER() throws Exception {
+        final var tokenUser = JwtUtil.geraJwt("USER", "teste");
+
+        final var carrinhoSalvo = this.repositoryCarrinho.save(
+                CarrinhoEntity.builder()
+                        .usuario("teste")
+                        .status(StatusEnum.FINALIZADO)
+                        .dataDeCriacao(LocalDateTime.now())
+                        .valorTotal(new BigDecimal("500.00"))
+                        .build()
+        );
+        this.repositoryItensNoCarrinho.save(
+                ItensNoCarrinhoEntity.builder()
+                        .id(ItensNoCarrinhoId.builder()
+                                .idCarrinho(carrinhoSalvo.getId())
+                                .ean(7894900011517L)
+                                .build())
+                        .precoTotal(new BigDecimal("500.00"))
+                        .build()
+        );
+
+        Mockito.when(this.clientUsuario.usuarioExiste("teste", "Bearer " + tokenUser))
+                .thenReturn(
+                        true
+                );
+
+        this.mockMvc
+                .perform(MockMvcRequestBuilders.get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO)
+                        .header("Authorization", "Bearer " + tokenUser)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers
+                        .status()
+                        .isNoContent()
+                );
+
+
+        var carrinho = this.repositoryCarrinho.findAll().get(0);
+        var itensDoCarrinho = this.repositoryItensNoCarrinho.findAll();
+
+        Assertions.assertEquals(StatusEnum.FINALIZADO, carrinho.getStatus());
+        Assertions.assertEquals("teste", carrinho.getUsuario());
+        Assertions.assertEquals(new BigDecimal("500.00"), carrinho.getValorTotal());
+        Assertions.assertNotNull(carrinho.getDataDeCriacao());
+        Assertions.assertEquals(1, itensDoCarrinho.size());
     }
 
     @ParameterizedTest

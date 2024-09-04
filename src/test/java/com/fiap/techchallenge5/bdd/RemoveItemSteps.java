@@ -2,6 +2,7 @@ package com.fiap.techchallenge5.bdd;
 
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
 import com.fiap.techchallenge5.integrados.JwtUtil;
+import io.cucumber.java.After;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Entao;
 import io.cucumber.java.pt.Quando;
@@ -12,6 +13,8 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+
+import java.util.Objects;
 
 import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO;
 import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO_COM_EAN;
@@ -26,6 +29,16 @@ public class RemoveItemSteps {
     private String token;
     private ClientAndServer mockServerItem;
     private ClientAndServer mockServerUsuario;
+
+    @After
+    public void finalizaTestePorTeste() {
+        if(Objects.nonNull(this.mockServerItem)) {
+            this.mockServerItem.stop();
+        }
+        if(Objects.nonNull(this.mockServerUsuario)) {
+            this.mockServerUsuario.stop();
+        }
+    }
 
     @Dado("que removo um item no carrinho que já tem um item")
     public void queRemovoUmItemNoCarrinhoQueJaTemUmItem() {
@@ -133,10 +146,10 @@ public class RemoveItemSteps {
     public void queRemovoUmItemComUmUsuarioQueNaoExisteNoSistema() {
         this.ean = System.currentTimeMillis();
 
-        this.token = JwtUtil.geraJwt();
+        this.token = JwtUtil.geraJwt("USER", "novoLogin");
 
         this.mockServerItem = this.criaMockServerItem(this.ean, 11111L);
-        this.mockServerUsuario = this.criaMockServerUsuario(JwtUtil.geraJwt("USER", "novoLogin"));
+        this.mockServerUsuario = this.criaMockServerUsuario(this.token);
     }
 
     @Quando("removo o item no carrinho")
@@ -157,9 +170,6 @@ public class RemoveItemSteps {
                 .statusCode(HttpStatus.OK.value())
         ;
 
-        this.mockServerItem.stop();
-        this.mockServerUsuario.stop();
-
     }
 
     @Entao("recebo uma resposta que o item não foi removido")
@@ -170,8 +180,6 @@ public class RemoveItemSteps {
                 .statusCode(HttpStatus.NO_CONTENT.value())
         ;
 
-        this.mockServerItem.stop();
-        this.mockServerUsuario.stop();
     }
 
     private ClientAndServer criaMockServerItem(final Long ean,

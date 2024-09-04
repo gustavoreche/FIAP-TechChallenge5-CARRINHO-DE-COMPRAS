@@ -119,6 +119,48 @@ public class CarrinhoControllerTest {
         Assertions.assertEquals(HttpStatus.NO_CONTENT, carrinho.getStatusCode());
     }
 
+    @Test
+    public void disponivelParaPagamento_deveRetornar200() {
+        // preparação
+        var service = Mockito.mock(CarrinhoUseCaseImpl.class);
+        Mockito.when(service.disponivelParaPagamento(
+                                any(String.class)
+                        )
+                )
+                .thenReturn(
+                        true
+                );
+
+        var controller = new CarrinhoController(service);
+
+        // execução
+        var carrinho = controller.disponivelParaPagamento("tokenTeste");
+
+        // avaliação
+        Assertions.assertEquals(HttpStatus.OK, carrinho.getStatusCode());
+    }
+
+    @Test
+    public void disponivelParaPagamento_deveRetornar204() {
+        // preparação
+        var service = Mockito.mock(CarrinhoUseCaseImpl.class);
+        Mockito.when(service.disponivelParaPagamento(
+                                any(String.class)
+                        )
+                )
+                .thenReturn(
+                        false
+                );
+
+        var controller = new CarrinhoController(service);
+
+        // execução
+        var carrinho = controller.disponivelParaPagamento("tokenTeste");
+
+        // avaliação
+        Assertions.assertEquals(HttpStatus.NO_CONTENT, carrinho.getStatusCode());
+    }
+
     @ParameterizedTest
     @MethodSource("requestValidandoCampos")
     public void insere_camposInvalidos_naoSalvaNaBaseDeDados(Long ean,

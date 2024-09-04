@@ -13,15 +13,19 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.util.Objects;
 
 import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO;
+import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO;
 import static io.restassured.RestAssured.given;
 
 
-public class InsereItemSteps {
+public class CarrinhoDisponivelParaPagamentoSteps {
 
+    private final JdbcTemplate jdbcTemplate = this.criaConexaoComBaseDeDados();
     private Response response;
     private AdicionaItemDTO request;
     private Long ean;
@@ -39,21 +43,8 @@ public class InsereItemSteps {
         }
     }
 
-    @Dado("que insiro um item no carrinho vazio")
-    public void queInsiroUmItemNoCarrinhoVazio() {
-        this.token = JwtUtil.geraJwt();
-        this.ean = System.currentTimeMillis();
-        this.request = new AdicionaItemDTO(
-                this.ean,
-                2L
-        );
-
-        this.mockServerItem = this.criaMockServerItem(this.ean, 11111L);
-        this.mockServerUsuario = this.criaMockServerUsuario(this.token);
-    }
-
-    @Dado("que insiro um item no carrinho que já tem um item")
-    public void queInsiroUmItemNoCarrinhoQueJaTemUmItem() {
+    @Dado("que verifico um carrinho que esteja disponivel para pagamento")
+    public void queVerificoUmCarrinhoQueEstejaDisponivelParaPagamento() {
         this.token = JwtUtil.geraJwt();
         this.ean = System.currentTimeMillis();
         this.request = new AdicionaItemDTO(
@@ -73,67 +64,68 @@ public class InsereItemSteps {
                 .body(request)
                 .when()
                 .post(URL_CARRINHO);
+    }
 
-        this.ean = novoEan;
-        this.request = new AdicionaItemDTO(
-                this.ean,
-                3L
+    @Dado("que verifico um carrinho que ja esteja finalizado")
+    public void queVerificoUmCarrinhoQueJaEstejaFinalizado() {
+        this.token = JwtUtil.geraJwt("USER", "loginCarrinhoFinalizado");;
+        this.ean = System.currentTimeMillis();
+
+        final var novoEan = this.ean + 333333L;
+
+        this.mockServerItem = this.criaMockServerItem(this.ean, novoEan);
+        this.mockServerUsuario = this.criaMockServerUsuario(this.token);
+
+        jdbcTemplate.execute("""
+                INSERT INTO tb_carrinho (data_de_criacao,status,usuario,valor_total) VALUES
+                	 ('2024-06-26 22:57:46.037','FINALIZADO','loginCarrinhoFinalizado',30.00);
+                """
         );
     }
 
-    @Dado("que insiro um item que não esta cadastrado no sistema")
-    public void queInsiroUmItemQueNaoEstaCadastradoNoSistema() {
-        this.token = JwtUtil.geraJwt();
-        this.request = new AdicionaItemDTO(
-                33333L,
-                2L
-        );
+    @Dado("que verifico um carrinho que não existe")
+    public void queVerificoUmCarrinhoQueNaoExiste() {
+        this.token = JwtUtil.geraJwt("USER", "loginSemCarrinho");
 
         this.mockServerItem = this.criaMockServerItem(22222L, 11111L);
         this.mockServerUsuario = this.criaMockServerUsuario(this.token);
     }
 
-    @Dado("que insiro um item com um usuário que não existe no sistema")
-    public void queInsiroUmItemComUmUsuarioQueNaoExisteNoSistema() {
+    @Dado("que verifico um carrinho com um usuário que não existe no sistema")
+    public void queVerificoUmCarrinhoComUmUsuarioQueNaoExisteNoSistema() {
         this.ean = System.currentTimeMillis();
-        this.request = new AdicionaItemDTO(
-                this.ean,
-                2L
-        );
-
-        this.token = JwtUtil.geraJwt("USER", "novoLogin");
+        this.token = JwtUtil.geraJwt();
 
         this.mockServerItem = this.criaMockServerItem(this.ean, 11111L);
-        this.mockServerUsuario = this.criaMockServerUsuario(this.token);
+        this.mockServerUsuario = this.criaMockServerUsuario(JwtUtil.geraJwt("USER", "novoLogin"));
     }
 
-    @Quando("insiro o item no carrinho")
-    public void insiroOItemNoCarrinho() {
+    @Quando("verifico esse carrinho")
+    public void verificoEsseCarrinho() {
         RestAssured.baseURI = "http://localhost:8082";
         this.response = given()
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .header("Authorization", "Bearer " + token)
-                .body(this.request)
+                .header("Authorization", "Bearer " + this.token)
                 .when()
-                .post(URL_CARRINHO);
+                .get(URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO);
     }
 
-    @Entao("recebo uma resposta que o item foi inserido com sucesso")
-    public void receboUmaRespostaQueOItemFoiInseridoComSucesso() {
+    @Entao("recebo uma resposta que o carrinho esta disponivel para pagamento")
+    public void receboUmaRespostaQueOCarrinhoEstaDisponivelParaPagamento() {
         this.response
                 .prettyPeek()
                 .then()
-                .statusCode(HttpStatus.CREATED.value())
+                .statusCode(HttpStatus.OK.value())
         ;
 
     }
 
-    @Entao("recebo uma resposta que o item não foi inserido")
-    public void receboUmaRespostaQueOItemNaoFoiInserido() {
+    @Entao("recebo uma resposta que o carrinho não esta disponivel para pagamento")
+    public void receboUmaRespostaQueOCarrinhoNaoEstaDisponivelParaPagamento() {
         this.response
                 .prettyPeek()
                 .then()
-                .statusCode(HttpStatus.CONFLICT.value())
+                .statusCode(HttpStatus.NO_CONTENT.value())
         ;
 
     }
@@ -221,7 +213,42 @@ public class InsereItemSteps {
                                 .withStatusCode(204)
                 );
 
+        clientAndServer.when(
+                        HttpRequest.request()
+                                .withMethod("GET")
+                                .withPath("/usuario/loginSemCarrinho")
+                                .withHeader("Authorization", "Bearer " + token)
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withContentType(org.mockserver.model.MediaType.APPLICATION_JSON)
+                                .withStatusCode(200)
+                                .withBody(String.valueOf(true))
+                );
+
+        clientAndServer.when(
+                        HttpRequest.request()
+                                .withMethod("GET")
+                                .withPath("/usuario/loginCarrinhoFinalizado")
+                                .withHeader("Authorization", "Bearer " + token)
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withContentType(org.mockserver.model.MediaType.APPLICATION_JSON)
+                                .withStatusCode(200)
+                                .withBody(String.valueOf(true))
+                );
+
         return clientAndServer;
+    }
+
+    private JdbcTemplate criaConexaoComBaseDeDados() {
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("org.postgresql.Driver");
+        dataSource.setUrl("jdbc:postgresql://localhost:5435/tech_challenge_5_carrinho_de_compras");
+        dataSource.setUsername("root");
+        dataSource.setPassword("root");
+        return new JdbcTemplate(dataSource);
     }
 
 }

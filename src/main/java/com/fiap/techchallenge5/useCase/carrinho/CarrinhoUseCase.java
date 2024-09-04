@@ -9,4 +9,6 @@ public interface CarrinhoUseCase {
 
     boolean remove(final Long ean,
                    final String token);
+
+    boolean disponivelParaPagamento(final String token);
 }

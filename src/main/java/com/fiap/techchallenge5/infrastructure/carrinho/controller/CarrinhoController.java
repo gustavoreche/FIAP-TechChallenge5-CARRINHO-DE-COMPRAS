@@ -21,6 +21,7 @@ public class CarrinhoController {
 
 	public static final String URL_CARRINHO = "/carrinho";
 	public static final String URL_CARRINHO_COM_EAN = URL_CARRINHO + "/{ean}";
+	public static final String URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO = URL_CARRINHO + "/disponivel-para-pagamento";
 
 	private final CarrinhoUseCase service;
 
@@ -53,6 +54,22 @@ public class CarrinhoController {
 									   @RequestHeader("Authorization") final String token) {
 		final var removeu = this.service.remove(ean, token);
 		if(removeu) {
+			return ResponseEntity
+					.status(HttpStatus.OK)
+					.build();
+		}
+		return ResponseEntity
+				.status(HttpStatus.NO_CONTENT)
+				.build();
+	}
+
+	@Operation(
+			summary = "Serviço para verificar se o carrinho está disponível para realizar o pagamento"
+	)
+	@GetMapping("/disponivel-para-pagamento")
+	public ResponseEntity<Void> disponivelParaPagamento(@RequestHeader("Authorization") final String token) {
+		final var disponivel = this.service.disponivelParaPagamento(token);
+		if(disponivel) {
 			return ResponseEntity
 					.status(HttpStatus.OK)
 					.build();

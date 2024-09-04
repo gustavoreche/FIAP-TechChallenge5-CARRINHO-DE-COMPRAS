@@ -173,6 +173,23 @@ public class CarrinhoUseCaseImpl implements CarrinhoUseCase {
         return true;
     }
 
+    @Override
+    public boolean disponivelParaPagamento(String token) {
+        final var usuario = this.pegaUsuario(token);
+        if(Objects.isNull(usuario)) {
+            return false;
+        }
+
+        final var carrinho = this.repositoryCarrinho
+                .findByUsuarioAndStatus(usuario, StatusEnum.ABERTO);
+        if(carrinho.isEmpty()) {
+            log.error("Carrinho não encontrado");
+            return false;
+        }
+
+        return true;
+    }
+
     private String pegaUsuario(final String token) {
         final var jwt = this.serviceToken.pegaJwt(token.replace("Bearer ", ""));
         if(Objects.isNull(jwt)){

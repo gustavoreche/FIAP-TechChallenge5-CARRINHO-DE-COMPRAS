@@ -15,8 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO;
-import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO_COM_EAN;
+import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.*;
 
 @Configuration
 @EnableWebSecurity
@@ -36,6 +35,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, URL_CARRINHO).hasAnyRole("ADMIN","USER")
                         .requestMatchers(HttpMethod.DELETE, URL_CARRINHO_COM_EAN).hasAnyRole("ADMIN","USER")
+                        .requestMatchers(HttpMethod.GET, URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO).hasAnyRole("ADMIN","USER")
                         .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(this.securityFilter, UsernamePasswordAuthenticationFilter.class)
