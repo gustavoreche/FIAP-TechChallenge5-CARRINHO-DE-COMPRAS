@@ -3,6 +3,7 @@ package com.fiap.techchallenge5.unitario;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fiap.techchallenge5.domain.StatusEnum;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.CarrinhoEntity;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.ItensNoCarrinhoEntity;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.ItensNoCarrinhoId;
@@ -1457,7 +1458,7 @@ public class CarrinhoUseCaseTest {
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
-        boolean disponivel = service.disponivelParaPagamento("tokenTeste");
+        CarrinhoDisponivelParaPagamentoDTO disponivel = service.disponivelParaPagamento("tokenTeste");
 
         // avaliação
         verify(serviceToken, times(1)).pegaJwt(Mockito.any());
@@ -1465,7 +1466,8 @@ public class CarrinhoUseCaseTest {
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(1)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
 
-        Assertions.assertTrue(disponivel);
+        Assertions.assertEquals("usuario de teste", disponivel.usuario());
+        Assertions.assertEquals(new BigDecimal("100.00"), disponivel.valorTotal());
     }
 
     @Test
@@ -1500,7 +1502,7 @@ public class CarrinhoUseCaseTest {
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
-        boolean disponivel = service.disponivelParaPagamento("tokenTeste");
+        CarrinhoDisponivelParaPagamentoDTO disponivel = service.disponivelParaPagamento("tokenTeste");
 
         // avaliação
         verify(serviceToken, times(1)).pegaJwt(Mockito.any());
@@ -1508,7 +1510,7 @@ public class CarrinhoUseCaseTest {
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(1)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
 
-        Assertions.assertFalse(disponivel);
+        Assertions.assertNull(disponivel);
     }
 
     @Test
@@ -1543,7 +1545,7 @@ public class CarrinhoUseCaseTest {
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
-        boolean disponivel = service.disponivelParaPagamento("tokenTeste");
+        CarrinhoDisponivelParaPagamentoDTO disponivel = service.disponivelParaPagamento("tokenTeste");
 
         // avaliação
         verify(serviceToken, times(1)).pegaJwt(Mockito.any());
@@ -1551,7 +1553,7 @@ public class CarrinhoUseCaseTest {
         verify(clientUsuario, times(0)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
 
-        Assertions.assertFalse(disponivel);
+        Assertions.assertNull(disponivel);
     }
 
     @Test
@@ -1586,7 +1588,7 @@ public class CarrinhoUseCaseTest {
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
-        boolean disponivel = service.disponivelParaPagamento("tokenTeste");
+        CarrinhoDisponivelParaPagamentoDTO disponivel = service.disponivelParaPagamento("tokenTeste");
 
         // avaliação
         verify(serviceToken, times(1)).pegaJwt(Mockito.any());
@@ -1594,7 +1596,7 @@ public class CarrinhoUseCaseTest {
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
 
-        Assertions.assertFalse(disponivel);
+        Assertions.assertNull(disponivel);
     }
 
     @Test
@@ -1629,7 +1631,7 @@ public class CarrinhoUseCaseTest {
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
-        boolean disponivel = service.disponivelParaPagamento("tokenTeste");
+        CarrinhoDisponivelParaPagamentoDTO disponivel = service.disponivelParaPagamento("tokenTeste");
 
         // avaliação
         verify(serviceToken, times(1)).pegaJwt(Mockito.any());
@@ -1637,7 +1639,7 @@ public class CarrinhoUseCaseTest {
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
 
-        Assertions.assertFalse(disponivel);
+        Assertions.assertNull(disponivel);
     }
 
     @Test
@@ -1676,7 +1678,7 @@ public class CarrinhoUseCaseTest {
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
-        boolean disponivel = service.disponivelParaPagamento("tokenTeste");
+        CarrinhoDisponivelParaPagamentoDTO disponivel = service.disponivelParaPagamento("tokenTeste");
 
         // avaliação
         verify(serviceToken, times(1)).pegaJwt(Mockito.any());
@@ -1684,7 +1686,305 @@ public class CarrinhoUseCaseTest {
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
 
-        Assertions.assertFalse(disponivel);
+        Assertions.assertNull(disponivel);
+    }
+
+    @Test
+    public void finaliza_sucesso_salvaNaBaseDeDados() {
+        // preparação
+        var clientItem = Mockito.mock(ItemClient.class);
+        var clientUsuario = Mockito.mock(UsuarioClient.class);
+        var repositoryCarrinho = Mockito.mock(CarrinhoRepository.class);
+        var repositoryItensNoCarrinho = Mockito.mock(ItensNoCarrinhoRepository.class);
+        var serviceToken = Mockito.mock(TokenUseCaseImpl.class);
+
+        Mockito.when(serviceToken.pegaJwt(Mockito.any()))
+                .thenReturn(
+                        mock(DecodedJWT.class)
+                );
+
+        Mockito.when(serviceToken.pegaUsuario(Mockito.any()))
+                .thenReturn(
+                        "tokenTeste"
+                );
+
+        Mockito.when(clientUsuario.usuarioExiste(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        true
+                );
+
+        Mockito.when(repositoryCarrinho.findByUsuarioAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        Optional.of(
+                                new CarrinhoEntity(
+                                        1L,
+                                        "usuario de teste",
+                                        StatusEnum.ABERTO,
+                                        new BigDecimal("100.00"),
+                                        LocalDateTime.now()
+                                )
+                        )
+                );
+
+        Mockito.when(repositoryCarrinho.save(Mockito.any()))
+                .thenReturn(
+                        new CarrinhoEntity(
+                                1L,
+                                "usuario de teste",
+                                StatusEnum.ABERTO,
+                                new BigDecimal("100.00"),
+                                LocalDateTime.now()
+                        )
+                );
+
+        var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
+
+        // execução
+        boolean finaliza = service.finaliza("tokenTeste");
+
+        // avaliação
+        verify(serviceToken, times(1)).pegaJwt(Mockito.any());
+        verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
+        verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(1)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(1)).save(Mockito.any());
+
+        Assertions.assertTrue(finaliza);
+    }
+
+    @Test
+    public void finaliza_carrinhoFinalizadoOuCarrinhoNaoExiste_naoSalvaNaBaseDeDados() {
+        // preparação
+        var clientItem = Mockito.mock(ItemClient.class);
+        var clientUsuario = Mockito.mock(UsuarioClient.class);
+        var repositoryCarrinho = Mockito.mock(CarrinhoRepository.class);
+        var repositoryItensNoCarrinho = Mockito.mock(ItensNoCarrinhoRepository.class);
+        var serviceToken = Mockito.mock(TokenUseCaseImpl.class);
+
+        Mockito.when(serviceToken.pegaJwt(Mockito.any()))
+                .thenReturn(
+                        mock(DecodedJWT.class)
+                );
+
+        Mockito.when(serviceToken.pegaUsuario(Mockito.any()))
+                .thenReturn(
+                        "tokenTeste"
+                );
+
+        Mockito.when(clientUsuario.usuarioExiste(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        true
+                );
+
+        Mockito.when(repositoryCarrinho.findByUsuarioAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        Optional.empty()
+                );
+
+        Mockito.when(repositoryCarrinho.save(Mockito.any()))
+                .thenReturn(
+                        new CarrinhoEntity(
+                                1L,
+                                "usuario de teste",
+                                StatusEnum.FINALIZADO,
+                                new BigDecimal("100.00"),
+                                LocalDateTime.now()
+                        )
+                );
+
+        var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
+
+        // execução
+        boolean finaliza = service.finaliza("tokenTeste");
+
+        // avaliação
+        verify(serviceToken, times(1)).pegaJwt(Mockito.any());
+        verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
+        verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(1)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).save(Mockito.any());
+
+        Assertions.assertFalse(finaliza);
+    }
+
+    @Test
+    public void finaliza_erroNoToken_naoSalvaNaBaseDeDados() {
+        // preparação
+        var clientItem = Mockito.mock(ItemClient.class);
+        var clientUsuario = Mockito.mock(UsuarioClient.class);
+        var repositoryCarrinho = Mockito.mock(CarrinhoRepository.class);
+        var repositoryItensNoCarrinho = Mockito.mock(ItensNoCarrinhoRepository.class);
+        var serviceToken = Mockito.mock(TokenUseCaseImpl.class);
+
+        Mockito.when(serviceToken.pegaJwt(Mockito.any()))
+                .thenReturn(
+                        null
+                );
+
+        Mockito.when(serviceToken.pegaUsuario(Mockito.any()))
+                .thenReturn(
+                        "tokenTeste"
+                );
+
+        Mockito.when(clientUsuario.usuarioExiste(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        true
+                );
+
+        Mockito.when(repositoryCarrinho.findByUsuarioAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        Optional.empty()
+                );
+
+        var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
+
+        // execução
+        boolean finaliza = service.finaliza("tokenTeste");
+
+        // avaliação
+        verify(serviceToken, times(1)).pegaJwt(Mockito.any());
+        verify(serviceToken, times(0)).pegaUsuario(Mockito.any());
+        verify(clientUsuario, times(0)).usuarioExiste(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).save(Mockito.any());
+
+        Assertions.assertFalse(finaliza);
+    }
+
+    @Test
+    public void finaliza_usuarioNaoExiste_naoSalvaNaBaseDeDados() {
+        // preparação
+        var clientItem = Mockito.mock(ItemClient.class);
+        var clientUsuario = Mockito.mock(UsuarioClient.class);
+        var repositoryCarrinho = Mockito.mock(CarrinhoRepository.class);
+        var repositoryItensNoCarrinho = Mockito.mock(ItensNoCarrinhoRepository.class);
+        var serviceToken = Mockito.mock(TokenUseCaseImpl.class);
+
+        Mockito.when(serviceToken.pegaJwt(Mockito.any()))
+                .thenReturn(
+                        mock(DecodedJWT.class)
+                );
+
+        Mockito.when(serviceToken.pegaUsuario(Mockito.any()))
+                .thenReturn(
+                        "tokenTeste"
+                );
+
+        Mockito.when(clientUsuario.usuarioExiste(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        null
+                );
+
+        Mockito.when(repositoryCarrinho.findByUsuarioAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        Optional.empty()
+                );
+
+        var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
+
+        // execução
+        boolean finaliza = service.finaliza("tokenTeste");
+
+        // avaliação
+        verify(serviceToken, times(1)).pegaJwt(Mockito.any());
+        verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
+        verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).save(Mockito.any());
+
+        Assertions.assertFalse(finaliza);
+    }
+
+    @Test
+    public void finaliza_usuarioNaoExiste2_naoSalvaNaBaseDeDados() {
+        // preparação
+        var clientItem = Mockito.mock(ItemClient.class);
+        var clientUsuario = Mockito.mock(UsuarioClient.class);
+        var repositoryCarrinho = Mockito.mock(CarrinhoRepository.class);
+        var repositoryItensNoCarrinho = Mockito.mock(ItensNoCarrinhoRepository.class);
+        var serviceToken = Mockito.mock(TokenUseCaseImpl.class);
+
+        Mockito.when(serviceToken.pegaJwt(Mockito.any()))
+                .thenReturn(
+                        mock(DecodedJWT.class)
+                );
+
+        Mockito.when(serviceToken.pegaUsuario(Mockito.any()))
+                .thenReturn(
+                        "tokenTeste"
+                );
+
+        Mockito.when(clientUsuario.usuarioExiste(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        false
+                );
+
+        Mockito.when(repositoryCarrinho.findByUsuarioAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        Optional.empty()
+                );
+
+        var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
+
+        // execução
+        boolean finaliza = service.finaliza("tokenTeste");
+
+        // avaliação
+        verify(serviceToken, times(1)).pegaJwt(Mockito.any());
+        verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
+        verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).save(Mockito.any());
+
+        Assertions.assertFalse(finaliza);
+    }
+
+    @Test
+    public void finaliza_usuarioNaoExiste3_naoSalvaNaBaseDeDados() {
+        // preparação
+        var clientItem = Mockito.mock(ItemClient.class);
+        var clientUsuario = Mockito.mock(UsuarioClient.class);
+        var repositoryCarrinho = Mockito.mock(CarrinhoRepository.class);
+        var repositoryItensNoCarrinho = Mockito.mock(ItensNoCarrinhoRepository.class);
+        var serviceToken = Mockito.mock(TokenUseCaseImpl.class);
+
+        Mockito.when(serviceToken.pegaJwt(Mockito.any()))
+                .thenReturn(
+                        mock(DecodedJWT.class)
+                );
+
+        Mockito.when(serviceToken.pegaUsuario(Mockito.any()))
+                .thenReturn(
+                        "tokenTeste"
+                );
+
+        Mockito.doThrow(
+                        new IllegalArgumentException("usuario nao existe!")
+                )
+                .when(clientUsuario)
+                .usuarioExiste(
+                        Mockito.any(),
+                        Mockito.any()
+                );
+
+        Mockito.when(repositoryCarrinho.findByUsuarioAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(
+                        Optional.empty()
+                );
+
+        var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
+
+        // execução
+        boolean finaliza = service.finaliza("tokenTeste");
+
+        // avaliação
+        verify(serviceToken, times(1)).pegaJwt(Mockito.any());
+        verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
+        verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryCarrinho, times(0)).save(Mockito.any());
+
+        Assertions.assertFalse(finaliza);
     }
 
     @ParameterizedTest

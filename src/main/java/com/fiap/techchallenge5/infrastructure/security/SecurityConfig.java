@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, URL_CARRINHO).hasAnyRole("ADMIN","USER")
                         .requestMatchers(HttpMethod.DELETE, URL_CARRINHO_COM_EAN).hasAnyRole("ADMIN","USER")
                         .requestMatchers(HttpMethod.GET, URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO).hasAnyRole("ADMIN","USER")
+                        .requestMatchers(HttpMethod.PUT, URL_CARRINHO_FINALIZA).hasAnyRole("ADMIN","USER")
                         .requestMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(this.securityFilter, UsernamePasswordAuthenticationFilter.class)

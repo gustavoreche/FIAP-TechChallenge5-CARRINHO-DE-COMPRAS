@@ -28,8 +28,9 @@ public class PerformanceTestSimulation extends Simulation {
     private final String tokenTeste2 = "Bearer " + JwtUtil.geraJwt("USER", "novoLogin");
     private final String usuarioDoToken3 = "loginDoGET"+System.currentTimeMillis();
     private final String tokenTeste3 = "Bearer " + JwtUtil.geraJwt("USER", usuarioDoToken3);
-    private final ClientAndServer mockServerItem = this.criaMockServerItem(this.tokenTeste1, this.tokenTeste2, this.tokenTeste3);
-    private final ClientAndServer mockServerUsuario = this.criaMockServerUsuario(this.tokenTeste1, this.tokenTeste2, this.tokenTeste3);
+    private final String tokenTeste4 = "Bearer " + JwtUtil.geraJwt("USER", "tokenFinaliza");
+    private final ClientAndServer mockServerItem = this.criaMockServerItem(this.tokenTeste1, this.tokenTeste2, this.tokenTeste3, this.tokenTeste4);
+    private final ClientAndServer mockServerUsuario = this.criaMockServerUsuario(this.tokenTeste1, this.tokenTeste2, this.tokenTeste3, this.tokenTeste4);
     private final HttpProtocolBuilder httpProtocol = http
             .baseUrl("http://localhost:8082");
 
@@ -55,6 +56,12 @@ public class PerformanceTestSimulation extends Simulation {
             .get("/carrinho/disponivel-para-pagamento")
             .header("Content-Type", "application/json")
             .header("Authorization", this.tokenTeste3)
+            .check(status().is(200));
+
+    ActionBuilder finalizaCarrinhoRequest = http("finaliza carrinho")
+            .put("/carrinho/finaliza")
+            .header("Content-Type", "application/json")
+            .header("Authorization", this.tokenTeste4)
             .check(status().is(200));
 
     ScenarioBuilder cenarioInsereItemNoCarrinho = scenario("Insere item no carrinho")
@@ -86,6 +93,15 @@ public class PerformanceTestSimulation extends Simulation {
             .exec(insereItemNoCarrinhoRequest)
             .exec(carrinhoDisponivelParaPagamentoRequest);
 
+    ScenarioBuilder cenarioFinalizaCarrinho = scenario("Finaliza carrinho")
+            .exec(session -> {
+                Map<String, Object> sessions = new HashMap<>();
+                sessions.put("ean", 333);
+                sessions.put("token", this.tokenTeste4);
+                return session.setAll(sessions);
+            })
+            .exec(insereItemNoCarrinhoRequest)
+            .exec(finalizaCarrinhoRequest);
 
     {
 
@@ -116,6 +132,15 @@ public class PerformanceTestSimulation extends Simulation {
                                 .during(Duration.ofSeconds(20)),
                         rampUsersPerSec(10)
                                 .to(1)
+                                .during(Duration.ofSeconds(10))),
+                cenarioFinalizaCarrinho.injectOpen(
+                        rampUsersPerSec(1)
+                                .to(10)
+                                .during(Duration.ofSeconds(10)),
+                        constantUsersPerSec(10)
+                                .during(Duration.ofSeconds(20)),
+                        rampUsersPerSec(10)
+                                .to(1)
                                 .during(Duration.ofSeconds(10)))
         )
                 .protocols(httpProtocol)
@@ -127,7 +152,8 @@ public class PerformanceTestSimulation extends Simulation {
 
     private ClientAndServer criaMockServerItem(final String token1,
                                                final String token2,
-                                               final String token3) {
+                                               final String token3,
+                                               final String token4) {
         final var clientAndServer = ClientAndServer.startClientAndServer(8081);
 
         clientAndServer.when(
@@ -184,12 +210,31 @@ public class PerformanceTestSimulation extends Simulation {
                                         """)
                 );
 
+        clientAndServer.when(
+                        HttpRequest.request()
+                                .withMethod("GET")
+                                .withPath("/item/333")
+                                .withHeader("Authorization", token4)
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withContentType(MediaType.APPLICATION_JSON)
+                                .withStatusCode(200)
+                                .withBody("""
+                                        {
+                                            "ean": 333,
+                                            "preco": 250.00
+                                        }
+                                        """)
+                );
+
         return clientAndServer;
     }
 
     private ClientAndServer criaMockServerUsuario(final String token1,
                                                   final String token2,
-                                                  final String token3) {
+                                                  final String token3,
+                                                  final String token4) {
         final var clientAndServer = ClientAndServer.startClientAndServer(8080);
 
         clientAndServer.when(
@@ -218,13 +263,24 @@ public class PerformanceTestSimulation extends Simulation {
                                 .withBody(String.valueOf(true))
                 );
 
-        log.error("usuarioDoToken3: "+usuarioDoToken3);
-        log.error("token: "+token3);
         clientAndServer.when(
                         HttpRequest.request()
                                 .withMethod("GET")
                                 .withPath("/usuario/"+usuarioDoToken3)
                                 .withHeader("Authorization", token3)
+                )
+                .respond(
+                        HttpResponse.response()
+                                .withContentType(MediaType.APPLICATION_JSON)
+                                .withStatusCode(200)
+                                .withBody(String.valueOf(true))
+                );
+
+        clientAndServer.when(
+                        HttpRequest.request()
+                                .withMethod("GET")
+                                .withPath("/usuario/tokenFinaliza")
+                                .withHeader("Authorization", token4)
                 )
                 .respond(
                         HttpResponse.response()

@@ -4,6 +4,7 @@ import com.fiap.techchallenge5.domain.Ean;
 import com.fiap.techchallenge5.domain.Item;
 import com.fiap.techchallenge5.domain.StatusEnum;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.CarrinhoEntity;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.ItensNoCarrinhoEntity;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.ItensNoCarrinhoId;
@@ -127,19 +128,11 @@ public class CarrinhoUseCaseImpl implements CarrinhoUseCase {
             return false;
         }
 
-        final var usuario = this.pegaUsuario(token);
-        if(Objects.isNull(usuario)) {
+        final var carrinhoExistente = this.getCarrinho(token);
+        if(Objects.isNull(carrinhoExistente)) {
             return false;
         }
 
-        final var carrinho = this.repositoryCarrinho
-                .findByUsuarioAndStatus(usuario, StatusEnum.ABERTO);
-        if(carrinho.isEmpty()) {
-            log.error("Carrinho não encontrado");
-            return false;
-        }
-
-        final var carrinhoExistente = carrinho.get();
         final var itensDoCarrinho = this.repositoryItensNoCarrinho.findByIdIdCarrinho(carrinhoExistente.getId());
         long count = itensDoCarrinho
                 .stream()
@@ -174,19 +167,26 @@ public class CarrinhoUseCaseImpl implements CarrinhoUseCase {
     }
 
     @Override
-    public boolean disponivelParaPagamento(String token) {
-        final var usuario = this.pegaUsuario(token);
-        if(Objects.isNull(usuario)) {
+    public CarrinhoDisponivelParaPagamentoDTO disponivelParaPagamento(final String token) {
+        final var carrinhoSelecionado = this.getCarrinho(token);
+
+        return Objects.isNull(carrinhoSelecionado)
+                ? null
+                : new CarrinhoDisponivelParaPagamentoDTO(
+                        carrinhoSelecionado.getUsuario(),
+                        carrinhoSelecionado.getValorTotal()
+                );
+    }
+
+    @Override
+    public boolean finaliza(final String token) {
+        final var carrinhoSelecionado = this.getCarrinho(token);
+        if(Objects.isNull(carrinhoSelecionado)) {
             return false;
         }
 
-        final var carrinho = this.repositoryCarrinho
-                .findByUsuarioAndStatus(usuario, StatusEnum.ABERTO);
-        if(carrinho.isEmpty()) {
-            log.error("Carrinho não encontrado");
-            return false;
-        }
-
+        carrinhoSelecionado.setStatus(StatusEnum.FINALIZADO);
+        this.repositoryCarrinho.save(carrinhoSelecionado);
         return true;
     }
 
@@ -209,6 +209,22 @@ public class CarrinhoUseCaseImpl implements CarrinhoUseCase {
             return null;
         }
         return usuario;
+    }
+
+    private CarrinhoEntity getCarrinho(final String token) {
+        final var usuario = this.pegaUsuario(token);
+        if(Objects.isNull(usuario)) {
+            return null;
+        }
+
+        final var carrinho = this.repositoryCarrinho
+                .findByUsuarioAndStatus(usuario, StatusEnum.ABERTO);
+        if(carrinho.isEmpty()) {
+            log.error("Carrinho não encontrado");
+            return null;
+        }
+
+        return carrinho.get();
     }
 
 }

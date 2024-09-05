@@ -1,6 +1,7 @@
 package com.fiap.techchallenge5.useCase.carrinho;
 
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
 
 public interface CarrinhoUseCase {
 
@@ -10,5 +11,7 @@ public interface CarrinhoUseCase {
     boolean remove(final Long ean,
                    final String token);
 
-    boolean disponivelParaPagamento(final String token);
+    CarrinhoDisponivelParaPagamentoDTO disponivelParaPagamento(final String token);
+
+    boolean finaliza(final String token);
 }

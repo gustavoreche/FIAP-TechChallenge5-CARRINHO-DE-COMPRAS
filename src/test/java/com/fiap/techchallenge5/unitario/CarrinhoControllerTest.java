@@ -2,6 +2,7 @@ package com.fiap.techchallenge5.unitario;
 
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
 import com.fiap.techchallenge5.useCase.carrinho.impl.CarrinhoUseCaseImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 
+import java.math.BigDecimal;
 import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -128,7 +130,10 @@ public class CarrinhoControllerTest {
                         )
                 )
                 .thenReturn(
-                        true
+                        new CarrinhoDisponivelParaPagamentoDTO(
+                                "teste",
+                                new BigDecimal("100.00")
+                        )
                 );
 
         var controller = new CarrinhoController(service);
@@ -149,7 +154,7 @@ public class CarrinhoControllerTest {
                         )
                 )
                 .thenReturn(
-                        false
+                        null
                 );
 
         var controller = new CarrinhoController(service);
@@ -160,6 +165,49 @@ public class CarrinhoControllerTest {
         // avaliação
         Assertions.assertEquals(HttpStatus.NO_CONTENT, carrinho.getStatusCode());
     }
+
+    @Test
+    public void finaliza_deveRetornar200() {
+        // preparação
+        var service = Mockito.mock(CarrinhoUseCaseImpl.class);
+        Mockito.when(service.finaliza(
+                                any(String.class)
+                        )
+                )
+                .thenReturn(
+                        true
+                );
+
+        var controller = new CarrinhoController(service);
+
+        // execução
+        var carrinho = controller.finaliza("tokenTeste");
+
+        // avaliação
+        Assertions.assertEquals(HttpStatus.OK, carrinho.getStatusCode());
+    }
+
+    @Test
+    public void finaliza_deveRetornar204() {
+        // preparação
+        var service = Mockito.mock(CarrinhoUseCaseImpl.class);
+        Mockito.when(service.finaliza(
+                                any(String.class)
+                        )
+                )
+                .thenReturn(
+                        false
+                );
+
+        var controller = new CarrinhoController(service);
+
+        // execução
+        var carrinho = controller.finaliza("tokenTeste");
+
+        // avaliação
+        Assertions.assertEquals(HttpStatus.NO_CONTENT, carrinho.getStatusCode());
+    }
+
 
     @ParameterizedTest
     @MethodSource("requestValidandoCampos")

@@ -1,6 +1,7 @@
 package com.fiap.techchallenge5.infrastructure.carrinho.controller;
 
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
 import com.fiap.techchallenge5.useCase.carrinho.CarrinhoUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,6 +9,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 import static com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController.URL_CARRINHO;
 
@@ -22,6 +25,7 @@ public class CarrinhoController {
 	public static final String URL_CARRINHO = "/carrinho";
 	public static final String URL_CARRINHO_COM_EAN = URL_CARRINHO + "/{ean}";
 	public static final String URL_CARRINHO_DISPONIVEL_PARA_PAGAMENTO = URL_CARRINHO + "/disponivel-para-pagamento";
+	public static final String URL_CARRINHO_FINALIZA = URL_CARRINHO + "/finaliza";
 
 	private final CarrinhoUseCase service;
 
@@ -67,9 +71,25 @@ public class CarrinhoController {
 			summary = "Serviço para verificar se o carrinho está disponível para realizar o pagamento"
 	)
 	@GetMapping("/disponivel-para-pagamento")
-	public ResponseEntity<Void> disponivelParaPagamento(@RequestHeader("Authorization") final String token) {
+	public ResponseEntity<CarrinhoDisponivelParaPagamentoDTO> disponivelParaPagamento(@RequestHeader("Authorization") final String token) {
 		final var disponivel = this.service.disponivelParaPagamento(token);
-		if(disponivel) {
+		if(Objects.nonNull(disponivel)) {
+			return ResponseEntity
+					.status(HttpStatus.OK)
+					.body(disponivel);
+		}
+		return ResponseEntity
+				.status(HttpStatus.NO_CONTENT)
+				.build();
+	}
+
+	@Operation(
+			summary = "Serviço para realizar o pagamento do carrinho"
+	)
+	@PutMapping("/finaliza")
+	public ResponseEntity<Void> finaliza(@RequestHeader("Authorization") final String token) {
+		final var finaliza = this.service.finaliza(token);
+		if(finaliza) {
 			return ResponseEntity
 					.status(HttpStatus.OK)
 					.build();
