@@ -3,6 +3,7 @@ package com.fiap.techchallenge5.unitario;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.CarrinhoController;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.ItensDoCarrinhoDTO;
 import com.fiap.techchallenge5.useCase.carrinho.impl.CarrinhoUseCaseImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -132,7 +134,8 @@ public class CarrinhoControllerTest {
                 .thenReturn(
                         new CarrinhoDisponivelParaPagamentoDTO(
                                 "teste",
-                                new BigDecimal("100.00")
+                                new BigDecimal("100.00"),
+                                List.of(new ItensDoCarrinhoDTO(123456789L, new BigDecimal("100.00")))
                         )
                 );
 

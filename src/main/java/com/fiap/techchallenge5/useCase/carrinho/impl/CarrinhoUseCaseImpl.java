@@ -5,6 +5,7 @@ import com.fiap.techchallenge5.domain.Item;
 import com.fiap.techchallenge5.domain.StatusEnum;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.AdicionaItemDTO;
 import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.CarrinhoDisponivelParaPagamentoDTO;
+import com.fiap.techchallenge5.infrastructure.carrinho.controller.dto.ItensDoCarrinhoDTO;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.CarrinhoEntity;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.ItensNoCarrinhoEntity;
 import com.fiap.techchallenge5.infrastructure.carrinho.model.ItensNoCarrinhoId;
@@ -169,13 +170,24 @@ public class CarrinhoUseCaseImpl implements CarrinhoUseCase {
     @Override
     public CarrinhoDisponivelParaPagamentoDTO disponivelParaPagamento(final String token) {
         final var carrinhoSelecionado = this.getCarrinho(token);
+        if(Objects.isNull(carrinhoSelecionado)) {
+            return null;            
+        }
 
-        return Objects.isNull(carrinhoSelecionado)
-                ? null
-                : new CarrinhoDisponivelParaPagamentoDTO(
-                        carrinhoSelecionado.getUsuario(),
-                        carrinhoSelecionado.getValorTotal()
-                );
+        final var itensDoCarrinho = this.repositoryItensNoCarrinho.findByIdIdCarrinho(carrinhoSelecionado.getId())
+                .stream()
+                .map(item -> new ItensDoCarrinhoDTO(
+                        item.getId().getEan(),
+                        item.getPrecoTotal()
+                    )
+                )
+                .toList();
+
+        return new CarrinhoDisponivelParaPagamentoDTO(
+                carrinhoSelecionado.getUsuario(),
+                carrinhoSelecionado.getValorTotal(),
+                itensDoCarrinho
+        );
     }
 
     @Override

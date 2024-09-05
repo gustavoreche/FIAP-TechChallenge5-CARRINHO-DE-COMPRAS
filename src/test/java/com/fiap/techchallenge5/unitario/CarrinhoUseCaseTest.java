@@ -1455,6 +1455,16 @@ public class CarrinhoUseCaseTest {
                         )
                 );
 
+        Mockito.when(repositoryItensNoCarrinho.findByIdIdCarrinho(Mockito.any()))
+                .thenReturn(
+                        List.of(
+                                new ItensNoCarrinhoEntity(
+                                        new ItensNoCarrinhoId(1L, 123456L),
+                                        new BigDecimal("100.00")
+                                )
+                        )
+                );
+
         var service = new CarrinhoUseCaseImpl(clientItem, clientUsuario, repositoryCarrinho, repositoryItensNoCarrinho, serviceToken);
 
         // execução
@@ -1465,9 +1475,13 @@ public class CarrinhoUseCaseTest {
         verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(1)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryItensNoCarrinho, times(1)).findByIdIdCarrinho(Mockito.any());
 
         Assertions.assertEquals("usuario de teste", disponivel.usuario());
         Assertions.assertEquals(new BigDecimal("100.00"), disponivel.valorTotal());
+        Assertions.assertEquals(1, disponivel.itens().size());
+        Assertions.assertEquals(123456L, disponivel.itens().get(0).ean());
+        Assertions.assertEquals(new BigDecimal("100.00"), disponivel.itens().get(0).valorTotal());
     }
 
     @Test
@@ -1509,6 +1523,7 @@ public class CarrinhoUseCaseTest {
         verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(1)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryItensNoCarrinho, times(0)).findByIdIdCarrinho(Mockito.any());
 
         Assertions.assertNull(disponivel);
     }
@@ -1552,6 +1567,7 @@ public class CarrinhoUseCaseTest {
         verify(serviceToken, times(0)).pegaUsuario(Mockito.any());
         verify(clientUsuario, times(0)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryItensNoCarrinho, times(0)).findByIdIdCarrinho(Mockito.any());
 
         Assertions.assertNull(disponivel);
     }
@@ -1595,6 +1611,7 @@ public class CarrinhoUseCaseTest {
         verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryItensNoCarrinho, times(0)).findByIdIdCarrinho(Mockito.any());
 
         Assertions.assertNull(disponivel);
     }
@@ -1638,6 +1655,7 @@ public class CarrinhoUseCaseTest {
         verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryItensNoCarrinho, times(0)).findByIdIdCarrinho(Mockito.any());
 
         Assertions.assertNull(disponivel);
     }
@@ -1685,6 +1703,7 @@ public class CarrinhoUseCaseTest {
         verify(serviceToken, times(1)).pegaUsuario(Mockito.any());
         verify(clientUsuario, times(1)).usuarioExiste(Mockito.any(), Mockito.any());
         verify(repositoryCarrinho, times(0)).findByUsuarioAndStatus(Mockito.any(), Mockito.any());
+        verify(repositoryItensNoCarrinho, times(0)).findByIdIdCarrinho(Mockito.any());
 
         Assertions.assertNull(disponivel);
     }
