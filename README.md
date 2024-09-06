@@ -42,11 +42,12 @@ o microsserviço de ITENS, para verificar se o item escolhido realmente existe n
 
 
 - Para realizar as operações neste microsserviço, é necessário estar autenticado. Para se autenticar, 
-é necessário acessar o micrsserviço de autenticação, e obter o token de acesso, via HTTP.
+é necessário acessar o microsserviço de autenticação, e obter o token de acesso, via HTTP.
 
 ![img.png](integracao_utiliza.png)
 
 #### Que esse microsserviço fornece:
 
-- A aplicação fornece via HTTP informações dos itens, para o microsserviço de ... .
-  [imagem]
+- A aplicação fornece via HTTP informações do carrinho, e disponibiliza um endpoint para atualizar
+o status do carrinho para o microsserviço de PAGAMENTOS.
+![img.png](integracao_fornece.png)
